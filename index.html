@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardstone Dungeon</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <div id="app">
+
+        <!-- TITLE -->
+        <div id="screen-title" class="screen active title-screen">
+            <h1>⚔ Cardstone Dungeon ⚔</h1>
+            <p class="title-sub">A roguelite deckbuilder — forge your path, master your deck</p>
+            <div class="title-btns">
+                <button class="btn btn-primary" onclick="startGame()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                    Begin Run
+                </button>
+                <button class="btn" onclick="toggleHowTo()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                    </svg>
+                    How to Play
+                </button>
+            </div>
+            <div id="howtoplay" class="howto" style="display:none">
+                <strong>⚔ Combat</strong>
+                Each turn you get 3 energy. Play cards to attack, defend, or apply effects. End turn lets the enemy act.
+                <strong>🗺 Branching Map</strong>
+                Multiple paths lead to the boss. Choose wisely — mix fights, elites, shops, rests, and events.
+                <strong>🃏 Card Types</strong>
+                <span class="kw" style="background:rgba(226,75,74,0.2);color:#ff8080">Attack</span>
+                <span class="kw" style="background:rgba(74,158,255,0.2);color:#7ab8ff">Block</span>
+                <span class="kw" style="background:rgba(99,153,34,0.2);color:#b5d676">Skill</span>
+                <span class="kw" style="background:rgba(239,159,39,0.2);color:#f5c547">Power</span>
+                <strong>✨ Keywords</strong>
+                <span class="kw kw-bleed">Bleed</span> lose HP each turn ·
+                <span class="kw kw-weak">Weak</span> −25% damage ·
+                <span class="kw kw-vuln">Vulnerable</span> +50% damage taken ·
+                <span class="kw kw-burn">Burn</span> damage each turn
+            </div>
+        </div>
+
+        <!-- MAP -->
+        <div id="screen-map" class="screen">
+            <div class="map-header">
+                <div class="hp-display">
+                    <span class="hp-icon">♥</span>
+                    <div>
+                        <div class="hp-text" id="map-hp-text">80/80</div>
+                        <div class="hp-bar-mini">
+                            <div class="hp-bar-mini-fill" id="map-hp-fill" style="width:100%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:10px;align-items:center">
+                    <span class="gold-display"><svg width="16" height="16" viewBox="0 0 24 24" fill="#f5c547">
+                            <circle cx="12" cy="12" r="10" stroke="#c9920f" stroke-width="1.5" /><text x="12" y="16"
+                                text-anchor="middle" font-size="10" font-weight="bold" fill="#2a1a00">$</text>
+                        </svg><span id="map-gold">0</span></span>
+                    <button class="btn" style="font-size:12px;padding:6px 12px" onclick="showDeck()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                            <line x1="8" y1="4" x2="8" y2="20" />
+                        </svg>
+                        Deck (<span id="deck-count">0</span>)
+                    </button>
+                </div>
+            </div>
+            <div class="act-banner"><strong id="act-label">Act I</strong> · <span id="floor-label">The Dungeon
+                    Awaits</span>
+            </div>
+            <div class="relics-row" id="map-relics"></div>
+            <div class="map-container">
+                <div class="map-svg-wrap">
+                    <svg class="map-svg" id="map-svg" viewBox="0 0 700 520" preserveAspectRatio="xMidYMid meet"></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMBAT -->
+        <div id="screen-combat" class="screen">
+            <div class="combat-wrap">
+                <div class="combat-header">
+                    <h2 id="combat-title" style="margin:0">Combat</h2>
+                    <button class="btn" style="font-size:12px;padding:6px 12px" onclick="showDeck()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                            <line x1="8" y1="4" x2="8" y2="20" />
+                        </svg>
+                        Deck (<span id="cdeck-count">0</span>)
+                    </button>
+                </div>
+                <!-- Enemy -->
+                <div class="combatant enemy-box" id="enemy-box">
+                    <div class="entity-header">
+                        <div class="entity-name">
+                            <div class="entity-sprite" id="enemy-sprite">👹</div>
+                            <div class="entity-meta">
+                                <h3 id="enemy-name">Goblin</h3>
+                                <div class="intent" id="enemy-intent">Attacks for 6</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hp-bar">
+                        <div class="hp-fill enemy" id="enemy-hp-fill" style="width:100%"></div>
+                        <div class="hp-text-overlay" id="enemy-hp-text">0/0</div>
+                    </div>
+                    <div class="status-row" id="enemy-statuses"></div>
+                </div>
+                <!-- Player -->
+                <div class="combatant player-box" id="player-box">
+                    <div class="entity-header">
+                        <div class="entity-name">
+                            <div class="entity-sprite">🛡</div>
+                            <div class="entity-meta">
+                                <h3>Hero</h3>
+                                <div style="font-size:12px;color:var(--text-dim)">Block: <span id="player-block"
+                                        style="color:#7ab8ff;font-weight:500">0</span></div>
+                            </div>
+                        </div>
+                        <div class="energy-display" id="energy-display"></div>
+                    </div>
+                    <div class="hp-bar">
+                        <div class="hp-fill player" id="player-hp-fill" style="width:100%"></div>
+                        <div class="hp-text-overlay" id="player-hp-text">0/0</div>
+                    </div>
+                    <div class="status-row" id="player-statuses"></div>
+                </div>
+                <div class="hand-info">
+                    <span>Hand: <strong id="hand-count">0</strong></span>
+                    <span>Draw: <strong id="draw-count">0</strong></span>
+                    <span>Discard: <strong id="discard-count">0</strong></span>
+                </div>
+                <div class="hand" id="hand"></div>
+                <div class="combat-btns">
+                    <button class="btn btn-primary" onclick="endTurn()">
+                        End Turn
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="13 17 18 12 13 7" />
+                            <polyline points="6 17 11 12 6 7" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="log" id="combat-log"></div>
+            </div>
+        </div>
+
+        <!-- REWARD -->
+        <div id="screen-reward" class="screen">
+            <div class="panel">
+                <h2>🎁 Choose a Card</h2>
+                <p class="panel-intro">Victory is yours. Select one card to add to your deck, or skip to keep it lean.
+                </p>
+                <div class="reward-cards" id="reward-cards"></div>
+                <button class="btn" onclick="skipReward()">Skip reward</button>
+            </div>
+        </div>
+
+        <!-- REST -->
+        <div id="screen-rest" class="screen">
+            <div class="panel">
+                <h2>🔥 Rest Site</h2>
+                <p class="panel-intro">A crackling campfire. The warmth soothes your wounds — or you could sharpen your
+                    blade by its light.</p>
+                <div style="display:flex;gap:12px;flex-wrap:wrap">
+                    <button class="btn btn-success" onclick="restHeal()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 21s-7-4.5-7-10a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.5-7 10-7 10z" />
+                        </svg>
+                        Rest (+25 HP)
+                    </button>
+                    <button class="btn btn-primary" onclick="restUpgrade()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polyline points="18 15 12 9 6 15" />
+                        </svg>
+                        Upgrade a card
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SHOP -->
+        <div id="screen-shop" class="screen">
+            <div class="panel">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                    <h2 style="margin:0">🛒 The Merchant</h2>
+                    <span class="gold-display" style="font-size:18px"><svg width="18" height="18" viewBox="0 0 24 24"
+                            fill="#f5c547">
+                            <circle cx="12" cy="12" r="10" />
+                        </svg><span id="shop-gold">0</span></span>
+                </div>
+                <p class="panel-intro">"Welcome, traveler. Fine wares for a fair price..."</p>
+                <div id="shop-items"></div>
+                <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+                    <button class="btn btn-danger" onclick="shopRemove()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                        Remove a card (50g)
+                    </button>
+                    <button class="btn" onclick="leaveShop()">Leave shop</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- UPGRADE PICKER -->
+        <div id="screen-upgrade" class="screen">
+            <div class="panel">
+                <h2>⚡ Upgrade a Card</h2>
+                <p class="panel-intro">Select one card from your deck to strengthen.</p>
+                <div class="deck-scroll" id="upgrade-list"></div>
+                <button class="btn" style="margin-top:16px" onclick="cancelUpgrade()">Cancel</button>
+            </div>
+        </div>
+
+        <!-- REMOVE PICKER -->
+        <div id="screen-remove" class="screen">
+            <div class="panel">
+                <h2>🗑 Remove a Card</h2>
+                <p class="panel-intro">Select one card to permanently remove (50g).</p>
+                <div class="deck-scroll" id="remove-list"></div>
+                <button class="btn" style="margin-top:16px" onclick="cancelRemove()">Cancel</button>
+            </div>
+        </div>
+
+        <!-- EVENT -->
+        <div id="screen-event" class="screen">
+            <div class="panel">
+                <h2 id="event-title">❓ Mysterious Event</h2>
+                <p class="panel-intro" id="event-text"></p>
+                <div class="event-choices" id="event-choices"></div>
+            </div>
+        </div>
+
+        <!-- DECK VIEWER -->
+        <div id="screen-deck" class="screen">
+            <div class="panel">
+                <h2>📖 Your Deck (<span id="full-deck-count">0</span>)</h2>
+                <div class="deck-scroll" id="full-deck-list"></div>
+                <button class="btn" style="margin-top:16px" onclick="closeDeck()">Back</button>
+            </div>
+        </div>
+
+        <!-- GAME OVER -->
+        <div id="screen-gameover" class="screen title-screen">
+            <h1 id="go-title">Defeat</h1>
+            <p class="title-sub" id="go-sub">You reached floor 3</p>
+            <button class="btn btn-primary" onclick="startGame()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1 4 1 10 7 10" />
+                    <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                </svg>
+                Try again
+            </button>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
